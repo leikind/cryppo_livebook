@@ -1,0 +1,189 @@
+# CryppoEx
+
+```elixir
+Mix.install([
+  {:cryppo_ex, "~> 0.2.3"}
+])
+```
+
+## Meeco
+
+Meeco https://meeco.me
+
+* personal data management
+* decentralised identity
+* verifiable credentials
+
+First Digital Student Card: [1](https://www.fintechbelgium.be/news/howest-and-kbc-launch-europes-first-digital-student-card), [2](https://www.kbc.com/content/dam/kbccom/doc/newsroom/pressreleases/2023/20230626_Howest_NL.pdf).
+
+[Verifiable credentials for education](https://www.meeco.me/blog/ebsi-verifiable-credentials-for-education)
+
+## Why Cryppo?
+
+* Encryption strategies - a higher level of abstraction for encryption
+* Working the same way on multiple development platforms
+* A serialization format for encrypted data
+
+## Cryppo Ports
+
+* [Ruby Cryppo](https://github.com/Meeco/cryppo) using OpenSSL
+* [Cryppo-JS](https://github.com/Meeco/cryppo-js) using [node-forge](https://www.npmjs.com/package/node-forge)
+* Erlang: [CryppoEx](https://hex.pm/packages/cryppo_ex), [hexdocs](https://hexdocs.pm/cryppo_ex/readme.html), using Erlang packages [crypto](https://www.erlang.org/doc/man/crypto) and [public_key](https://www.erlang.org/doc/man/public_key)
+* [Cryppo in Dart](https://pub.dev/packages/cryppo)
+
+## Enryption With A Generated Key
+
+```elixir
+Cryppo.encryption_strategies()
+```
+
+```elixir
+encryption_key = Cryppo.generate_encryption_key("Aes256Gcm")
+```
+
+```elixir
+encrypted = Cryppo.encrypt("a very big secret!", "Aes256Gcm", encryption_key)
+```
+
+```elixir
+Cryppo.serialize(encrypted)
+```
+
+```elixir
+s =
+  "a very big secret!"
+  |> Cryppo.encrypt("Aes256Gcm", encryption_key)
+  |> Cryppo.serialize()
+```
+
+```elixir
+Cryppo.load(s)
+```
+
+```elixir
+with {:ok, encrypted_data} <- Cryppo.load(s),
+     do: Cryppo.decrypt(encrypted_data, encryption_key)
+```
+
+With Erlang syntax:
+
+```erlang
+Cryppo = 'Elixir.Cryppo'.
+```
+
+```erlang
+Cryppo:generate_encryption_key(<< "Aes256Gcm" >>).
+```
+
+```erlang
+Key = Cryppo:generate_encryption_key(<< "Aes256Gcm" >>),
+Encrypted1 = Cryppo:encrypt(<< "a very big secret!" >>, << "Aes256Gcm" >>, Key),
+Serialized = Cryppo:serialize(Encrypted1).
+
+```
+
+```erlang
+{ok, Encrypted2} = Cryppo:load(Serialized),
+Cryppo:decrypt(Encrypted2, Key).
+```
+
+A completely different encryption strategy:
+
+```elixir
+rsa_encryption_key = Cryppo.generate_encryption_key("Rsa4096")
+```
+
+```elixir
+s =
+  "a very big secret!"
+  |> Cryppo.encrypt("Rsa4096", rsa_encryption_key)
+  |> Cryppo.serialize()
+```
+
+```elixir
+with {:ok, encrypted_data} <- Cryppo.load(s),
+     do: Cryppo.decrypt(encrypted_data, rsa_encryption_key)
+```
+
+## Encryption With Derived Keys
+
+```elixir
+Cryppo.derivation_strategies()
+```
+
+```elixir
+s =
+  "a very big secret!"
+  |> Cryppo.encrypt_with_derived_key("Aes256Gcm", "Pbkdf2Hmac", "this is a passphrase!")
+  |> Cryppo.serialize()
+```
+
+```elixir
+with {:ok, encrypted_data} <- Cryppo.load(s),
+     do: Cryppo.decrypt_with_derived_key(encrypted_data, "this is a passphrase!")
+```
+
+## Digital Signatures with RSA
+
+```elixir
+key = Cryppo.generate_encryption_key("Rsa4096")
+# key = :public_key.generate_key({:rsa, 4_096, 65_537})
+# key = "-----BEGIN RSA PRIVATE KEY-----\nMIICWwIBAAKBgQDKCUh7F4p5btzcSLBaToHvD3rCZX4fMaDtjkN5TwmC3/6iQzD5\ntn396BzDTdQ16HuuZ+eN+KQSa1QWr2h1DB13nVP+moeyLVC8BShiM3NBRn77r7Lr\nsWooM3mwnSvMPWWnBj1c+0tbO7zfur5wQdzBl66HrHgHt+Bz6f+dDj+aVwIDAQAB\nAoGAMHh3rihgrW9+h07dGF1baOoyzm6hCoTSkguefn0K0B5DLdSm7FHu+jp0pBqI\n/gHvolEFSZdMbarYOrUMf4BPlRSarCjjxf/beV4Pj/UQrCkDmNBBVJp33Sy8HEdb\nWrzk+k8NcAS1UR4R6EW9JrUz0mMwX6CsvG2zZMbpS/Q9KXkCQQDwmCXjOTPQ+bxW\nK4gndHnXD5QkKNcTdFq64ef23R6AY0XEGkiRLDXZZA09hDIACgSSfk1Qbo0SJSvU\nTAR8A6clAkEA1vkWJ5qUo+xuIZB+2604LRco1GYAj5/fZ2kvUMjbOdCFgFaDVzJY\nX2pzLkk7RZNgPvXcRAgX7FlWmm4jwZzQywJARrHeSCMRx7DqF0PZUQaXmorYU7uw\nXuYMluc0WsRkZwNEh7fVZNrhw8vzXAUREBPhfg4gt6aUSyWi+FGR68LDBQJAC55O\nujk6i1l94kaC9LB59sXnqQMSSLDlTBt9OSqB3rAMZxFF6/KGoDGKpBfFIk+CxiRX\nkT22vUleyt3lBNPK3QJAEr56asvREcIDFkbs7Ebjev4U1PL58w78ipp49Ti5FiwH\nvR9vuGcUcIDcWKOl05t4D35F5A/DskP6dGYA1cuWNg==\n-----END RSA PRIVATE KEY-----\n\n"
+signature = Cryppo.Rsa4096.sign("data to sign", key)
+```
+
+```elixir
+public_key = Cryppo.Rsa4096.private_key_to_public_key(key)
+Cryppo.Rsa4096.verify(signature, public_key)
+```
+
+## What We Use And We Could Be Added To Cryppo
+
+* Elliptic-curve cryptography: Elliptic Curve Digital Signature Algorithm ([ECDSA](https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm)), [Ed25519](https://en.wikipedia.org/wiki/EdDSA). We use this cryptography a lot, but there is no need for using it in multiple programming stack, they are only used in Typescript for now.
+* Symmetric encryption for big files in order to enable streaming
+
+## Authenticated Symmetric Encryption vs Non-authenticated Symmetric Encryption
+
+[Galois/Counter Mode](https://en.wikipedia.org/wiki/Galois/Counter_Mode):
+
+```elixir
+key1 = Cryppo.generate_encryption_key("Aes256Gcm")
+key2 = Cryppo.generate_encryption_key("Aes256Gcm")
+
+s =
+  "a very big secret!"
+  |> Cryppo.encrypt("Aes256Gcm", key1)
+  |> Cryppo.serialize()
+```
+
+```elixir
+with {:ok, encrypted_data} <- Cryppo.load(s),
+     do: Cryppo.decrypt(encrypted_data, key2)
+```
+
+```elixir
+key1 = Cryppo.generate_encryption_key("Aes128Ctr")
+key2 = Cryppo.generate_encryption_key("Aes128Ctr")
+
+s =
+  "a very big secret!"
+  |> Cryppo.encrypt("Aes128Ctr", key1)
+  |> Cryppo.serialize()
+```
+
+```elixir
+with {:ok, encrypted_data} <- Cryppo.load(s),
+     do: Cryppo.decrypt(encrypted_data, key2)
+```
+
+## Command Line Interface With Escript
+
+[escript](https://www.erlang.org/doc/man/escript.html) provides support for running short Erlang programs without having to compile them first, and an easy way to retrieve the command-line arguments.
+
+```
+MIX_ENV=prod mix escript.build
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+Also: [Cryppo-CLI](https://github.com/Meeco/cryppo-cli/) for Cryppo-js.
